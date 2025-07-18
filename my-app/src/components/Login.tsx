@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { OdooApi } from '../services/odooApi';
 
 interface LoginProps {
-    onLogin: (username: string) => void;
+    onLogin: (userInfo: any) => void;
 }
 
 function Login({ onLogin }: LoginProps) {
@@ -19,14 +20,25 @@ function Login({ onLogin }: LoginProps) {
         setIsLoading(true);
         setError('');
 
-        setTimeout(() => {
-            if (username === 'admin' && password === 'password') {
-                onLogin(username);
+        try {
+            const result = await OdooApi.login(username, password);
+            if (result.success) {
+                console.log('Login successful:', result);
+                onLogin({
+                    uid: result.uid,
+                    username: result.name,
+                    name: result.name,
+                    company_id: result.company_id,
+                });
             } else {
-                setError('Invalid username or password');
+                console.log('Login failed:', result.error);
+                setError(result.error || 'Login failed.');
             }
-            setIsLoading(false);
-        }, 1000);
+        } catch (error) {
+            console.error('💥 Login error:', error);
+            setError('Connection error. Please check your internet connection.');
+        }
+        setIsLoading(false);
     };
 
     return (
@@ -97,39 +109,35 @@ function Login({ onLogin }: LoginProps) {
                     />
                 </div>
                 {error && (
-          <div style={{
-            backgroundColor: '#f8d7da',
-            color: '#721c24',
-            padding: '12px',
-            borderRadius: '4px',
-            marginBottom: '20px',
-            border: '1px solid #f5c6cb'
-          }}>
-            {error}
-          </div>
-        )}
+                    <div style={{
+                        backgroundColor: '#f8d7da',
+                        color: '#721c24',
+                        padding: '12px',
+                        borderRadius: '4px',
+                        marginBottom: '20px',
+                        border: '1px solid #f5c6cb'
+                    }}>
+                        {error}
+                    </div>
+                )}
 
-        <button
-          onClick={handleSubmit}
-          disabled={isLoading}
-          style={{
-            width: '100%',
-            padding: '12px',
-            backgroundColor: isLoading ? '#6c757d' : '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            fontSize: '16px',
-            cursor: isLoading ? 'not-allowed' : 'pointer',
-            fontWeight: 'bold'
-          }}
-        >
-          {isLoading ? 'Signing in...' : 'Sign In'}
-        </button>
-
-        <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '14px', color: '#666' }}>
-          Demo credentials: admin / password
-        </div>
+                <button
+                    onClick={handleSubmit}
+                    disabled={isLoading || !username || !password}
+                    style={{
+                        width: '100%',
+                        padding: '12px',
+                        backgroundColor: isLoading || !username || !password ? '#6c757d' : '#007bff',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        fontSize: '16px',
+                        cursor: isLoading || !username || !password ? 'not-allowed' : 'pointer',
+                        fontWeight: 'bold'
+                    }}
+                >
+                    {isLoading ? 'Signing in...' : 'Sign In'}
+                </button>
             </div>
         </div>
     )

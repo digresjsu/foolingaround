@@ -3,22 +3,38 @@ import Header from './components/Header.tsx';
 import Layout from './components/Layout.tsx';
 import Widget from './components/Widget.tsx';
 import Login from './components/Login.tsx';
+import { OdooApi } from './services/odooApi.ts';
 
+interface User {
+  uid: number;
+  username: string;
+  name: string;
+  company_id: number;
+}
 
 function App() {
   const [currentPage, setCurrentPage] = useState('Dashboard');
   const [isLoggedIn, setIsLoggedIn] = useState(false);  
-  const [currentUser, setCurrentUser] = useState('');
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  const handleLogin = (username: string) => {
-    setCurrentUser(username);
+  const handleLogin = (userInfo: any) => {
+    setCurrentUser(userInfo);
     setIsLoggedIn(true);
   };
 
-  const handleLogout = () => {
-    setCurrentUser('');
-    setIsLoggedIn(false);
-    setCurrentPage('Dashboard');
+  const handleLogout = async () => {
+    try {
+      console.log('Logging out...');
+      await OdooApi.logout();
+      setIsLoggedIn(false);
+      setCurrentUser(null);
+      setCurrentPage('Dashboard'); // Reset to Dashboard on logout
+    } catch (error) {
+      console.error('Logout failed:', error);
+      setIsLoggedIn(false);
+      setCurrentUser(null);
+      setCurrentPage('Dashboard'); // Reset to Dashboard on error
+    }
   };
 
   const goToDashboard = () => setCurrentPage('Dashboard');
@@ -29,7 +45,7 @@ function App() {
 
   return (
     <Layout currentPage={currentPage} onNavigate={setCurrentPage} onLogoClick={goToDashboard}>
-      <Header title="Odoo Dashboard" userName={currentUser} onLogout={handleLogout}/>
+      <Header title="Odoo Dashboard" userName={currentUser?.name || currentUser?.username || 'User'} onLogout={handleLogout}/>
       <div style={{ padding: '10px 20px' }}>
         {currentPage === 'Dashboard' && <DashboardPage />}
         {currentPage === 'Customers' && <CustomersPage />}
